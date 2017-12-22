@@ -4,6 +4,7 @@ import click
 import boto3
 # TODO: Add backoff/retry
 
+
 @click.command()
 @click.option('--host', '-h', default='localhost',
               help='Hostname of redis server')
@@ -26,9 +27,24 @@ def check_queues(host, port, environment, deploy, max_metrics):
     for m in response["Metrics"]:
         existing_queues.extend(
             [d['Value'] for d in m["Dimensions"] if d['Name'] == dimension])
-    print(existing_queues)
+    print("existing {}".format(existing_queues))
 
-    queues = [k for k in r.keys() if r.type(k) == b'list']
+    redis_queues = set([k.decode() for k in r.keys() if r.type(k) == b'list'])
+
+    all_queues = existing_queues + list(
+        set(redis_queues).difference(existing_queues)
+    )
+    print("rq {}".format(redis_queues))
+    print("eq {}".format(existing_queues))
+    print("aq {}".format(all_queues))
+
+    if len(all_queues) > max_metrics:
+        # TODO: Use proper logging framework
+        print("Warning! Too many metrics, refusing to publish more than {}".format(max_metrics))
+
+    # Take first max_metrics number of queues from all_queues and remove
+    # queues that aren't in redis
+    queues = [ q for q in all_queues[:max_metrics] if q in redis_queues ]
 
     metric_data = []
     for queue in queues:
@@ -36,7 +52,7 @@ def check_queues(host, port, environment, deploy, max_metrics):
             'MetricName': metric_name,
             'Dimensions': [{
                 "Name": dimension,
-                "Value": queue.decode()
+                "Value": queue
             }],
             'Value': r.llen(queue)
         })
