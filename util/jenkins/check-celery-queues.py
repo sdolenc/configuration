@@ -43,7 +43,7 @@ def check_queues(host, port, environment, deploy, max_metrics):
                 'MetricName': 'queue_length',
                 'Dimensions': [
                     {
-                        'Name': 'queue_name',
+                        'Name': 'queue',
                         'Value': queue
                     }
                 ],
