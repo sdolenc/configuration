@@ -12,10 +12,11 @@
     - "install:configuration"
 
 - name: Enable/start disable transparent huge pages service (http://docs.mongodb.org/manual/tutorial/transparent-huge-pages/)
-  service:
+  systemd:
     name: disable-transparent-hugepages
     enabled: yes
     state: started
+    daemon_reload: yes
   tags:
     - "hugepages"
     - "manage"
